@@ -21,6 +21,8 @@
 import eos.config
 from eos.calc import calculateRangeFactor
 from eos.const import FittingModuleState, FitSystemSecurity
+from eos.pirateSynchronizers import applyPirateBonuses
+from eos.synchronizers import FAMILIES, GROUP_ID, TYPE_ID_BASE
 from eos.utils.spoolSupport import SpoolType, SpoolOptions, calculateSpoolup, resolveSpoolOptions
 
 
@@ -44240,3 +44242,122 @@ class Effect100209(BaseEffect):
         fit.modules.filteredItemBoost(
             lambda mod: mod.item.group.name == 'Warp Disrupt Field Generator',
             'signatureRadiusBonus', -50, **kwargs)
+
+
+class Effect100300(BaseEffect):
+    """
+    pyfaCustomExperimentalSynchronizer
+
+    Used by:
+    Experimental Synchronizer rigs in all nine faction families.
+    Only numerically documented effects are implemented.
+    """
+
+    # Heat-benefit attributes must be ready before normal-runtime overheating.
+    runTime = 'early'
+    type = 'passive'
+
+    @staticmethod
+    def handler(fit, module, context, projectionRange, **kwargs):
+        if ('module' not in context or 'projected' in context or
+                module not in fit.modules or module.state < FittingModuleState.ONLINE):
+            return
+        familyIndex = (module.item.ID - TYPE_ID_BASE) // 3
+        if not 0 <= familyIndex < len(FAMILIES) or module.item.group.ID != GROUP_ID:
+            return
+        family = FAMILIES[familyIndex]
+        # "Fitted" includes offline modules, but never ammunition, cargo,
+        # drones, mutated modules, or Synchronizer rigs themselves.
+        prefix = family + ' '
+        count = sum(
+            1 for mod in fit.modules
+            if not mod.isEmpty and not mod.isMutated and not mod.projected and
+            mod.item.group.ID != GROUP_ID and mod.item.typeName.startswith(prefix))
+        bonus = 5 + count
+        if family == 'Federation Navy':
+            for attr in ('damageMultiplier', 'trackingSpeed'):
+                fit.modules.filteredItemBoost(
+                    lambda mod: mod.item.group.name == 'Hybrid Weapon', attr, bonus, **kwargs)
+            fit.modules.filteredItemBoost(
+                lambda mod: mod.item.group.name == 'Armor Repair Unit',
+                'armorDamageAmount', bonus, **kwargs)
+            fit.ship.boostItemAttr('hp', bonus, **kwargs)
+        elif family == 'Imperial Navy':
+            fit.modules.filteredItemBoost(
+                lambda mod: mod.item.group.name == 'Energy Weapon',
+                'damageMultiplier', bonus, **kwargs)
+            fit.modules.filteredItemBoost(
+                lambda mod: mod.item.group.name == 'Energy Weapon',
+                'capacitorNeed', -bonus, **kwargs)
+            for attr in ('capacitorCapacity', 'armorHP'):
+                fit.ship.boostItemAttr(attr, bonus, **kwargs)
+        elif family == 'Republic Fleet':
+            for attr in ('damageMultiplier', 'trackingSpeed'):
+                fit.modules.filteredItemBoost(
+                    lambda mod: mod.item.group.name == 'Projectile Weapon', attr, bonus, **kwargs)
+            fit.modules.filteredItemBoost(
+                lambda mod: mod.item.group.name == 'Shield Booster',
+                'duration', -bonus, **kwargs)
+            fit.ship.boostItemAttr('maxVelocity', bonus, **kwargs)
+        elif family == 'Caldari Navy':
+            for attr in ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage', 'maxVelocity'):
+                fit.modules.filteredChargeBoost(
+                    lambda mod: mod.charge.requiresSkill('Missile Launcher Operation'),
+                    attr, bonus, **kwargs)
+            for attr in ('shieldCapacity', 'maxTargetRange'):
+                fit.ship.boostItemAttr(attr, bonus, **kwargs)
+        else:
+            applyPirateBonuses(fit, module, family, count, **kwargs)
+
+
+class Effect100400(BaseEffect):
+    """pyfaCustomExperimentalNavyBattlecruiser — documented navy bonuses only."""
+
+    type = 'passive'
+
+    @staticmethod
+    def handler(fit, ship, context, projectionRange, **kwargs):
+        if 'ship' not in context:
+            return
+        typeID = ship.item.ID
+        if typeID == 1001102:
+            # Group scope excludes rapid heavies and every hybrid weapon.
+            launcher = lambda mod: mod.item.group.name in (
+                'Missile Launcher Cruise', 'Missile Launcher Torpedo')
+            for attr, bonus in (('power', -95), ('cpu', -50)):
+                fit.modules.filteredItemBoost(launcher, attr, bonus, **kwargs)
+            for attr in ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage', 'maxVelocity'):
+                fit.modules.filteredChargeBoost(
+                    launcher, attr, 10 if attr in ('kineticDamage', 'maxVelocity') else 5,
+                    skill='Caldari Battlecruiser', **kwargs)
+            return
+
+        if typeID == 1001100:
+            weaponSkill = 'Large Energy Turret'
+            skill = 'Amarr Battlecruiser'
+            bonuses = (('damageMultiplier', 15), ('maxRange', 7.5), ('capacitorNeed', -10))
+        elif typeID == 1001101:
+            weaponSkill = 'Large Hybrid Turret'
+            skill = 'Gallente Battlecruiser'
+            bonuses = (('damageMultiplier', 15), ('falloff', 7.5))
+            fit.modules.filteredItemBoost(
+                lambda mod: mod.item.group.name == 'Armor Plate',
+                'massAddition', -15, skill=skill, **kwargs)
+        elif typeID == 1001103:
+            weaponSkill = 'Large Projectile Turret'
+            skill = 'Minmatar Battlecruiser'
+            bonuses = (('speed', -10), ('falloff', 7.5))
+            fit.modules.filteredItemBoost(
+                lambda mod: mod.item.requiresSkill('High Speed Maneuvering'),
+                'signatureRadiusBonus', -15, skill=skill, **kwargs)
+        else:
+            return
+
+        weapon = lambda mod: mod.item.requiresSkill(weaponSkill)
+        for attr, bonus in bonuses:
+            fit.modules.filteredItemBoost(weapon, attr, bonus, skill=skill, **kwargs)
+        for attr, bonus in (('power', -95), ('cpu', -50)):
+            fit.modules.filteredItemBoost(weapon, attr, bonus, **kwargs)
+        if typeID in (1001100, 1001101):
+            # Role and skill reductions are separate multipliers, not summed.
+            fit.modules.filteredItemBoost(weapon, 'capacitorNeed', -50, **kwargs)

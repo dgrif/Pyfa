@@ -8,6 +8,9 @@ import platform
 
 os_name = platform.system()
 block_cipher = None
+portable = os.environ.get('PYFA_PORTABLE') == '1'
+if portable and os_name != 'Windows':
+    raise ValueError('PYFA_PORTABLE builds require a Windows Python runtime')
 
 added_files = [
      ('imgs/gui/*.png', 'imgs/gui'),
@@ -53,7 +56,6 @@ if os_name == 'Darwin':
 import_these = [
     'numpy.core._dtype_ctypes',  # https://github.com/pyinstaller/pyinstaller/issues/3982
     'sqlalchemy.ext.baked',  # windows build doesn't launch without if when using sqlalchemy 1.3.x
-    'pkg_resources.py2_warn'  # issue 2156
 ]
 
 # Walk directories that do dynamic importing
@@ -73,7 +75,7 @@ a = Analysis(['pyfa.py'],
              datas=added_files,
              hiddenimports=import_these,
              hookspath=['dist_assets/pyinstaller_hooks'],
-             runtime_hooks=[],
+             runtime_hooks=['dist_assets/win/portable_hook.py'] if portable else [],
              excludes=['Tkinter'],
              win_no_prefer_redirects=False,
              win_private_assemblies=False,
@@ -85,8 +87,9 @@ pyz = PYZ(a.pure, a.zipped_data, cipher=block_cipher)
 exe = EXE(
     pyz,
     a.scripts,
-    exclude_binaries=True,
-    name='pyfa',
+    *([a.binaries, a.datas] if portable else []),
+    exclude_binaries=not portable,
+    name='pyfa-Fractured-Skies-Portable' if portable else 'pyfa',
     debug=debug,
     strip=False,
     upx=upx,
@@ -96,15 +99,16 @@ exe = EXE(
     contents_directory='app',
 )
 
-coll = COLLECT(
-    exe,
-    a.binaries,
-    a.zipfiles,
-    a.datas,
-    strip=False,
-    upx=upx,
-    name='pyfa',
-)
+if not portable:
+    coll = COLLECT(
+        exe,
+        a.binaries,
+        a.zipfiles,
+        a.datas,
+        strip=False,
+        upx=upx,
+        name='pyfa',
+    )
 
 if platform.system() == 'Darwin':
     info_plist = {

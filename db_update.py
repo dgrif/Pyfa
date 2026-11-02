@@ -968,6 +968,91 @@ def update_db():
         _hardcodeAttribs(penitenceTypeID, attrMap)
         _hardcodeEffects(penitenceTypeID, effectMap)
 
+    def hardcodeSynchronizers():
+        from eos.synchronizers import (
+            EFFECT_ID, EXPERIMENTAL_WARNING, FAMILIES, FAMILY_DESCRIPTIONS,
+            GROUP_ID, TYPE_ID_BASE)
+
+        group = eos.gamedata.Group()
+        group.ID = GROUP_ID
+        group.categoryID = 7  # Module
+        group.published = True
+        group.iconID = 3203  # Existing Rigs market icon
+        marketGroup = eos.gamedata.MarketGroup()
+        marketGroup.ID = GROUP_ID
+        marketGroup.parentGroupID = 1111  # Rigs
+        marketGroup.hasTypes = True
+        marketGroup.iconID = group.iconID
+        for suffix in eos.config.translation_mapping.values():
+            setattr(group, f'name{suffix}', 'Experimental Synchronizers')
+            setattr(marketGroup, f'marketGroupName{suffix}', 'Experimental Synchronizers')
+            setattr(marketGroup, f'_description{suffix}', EXPERIMENTAL_WARNING)
+        eos.db.gamedata_session.add_all((group, marketGroup))
+        factionMetaGroup = eos.db.gamedata_session.query(eos.gamedata.MetaGroup).filter(
+            eos.gamedata.MetaGroup.ID == 4).one()
+        # Create new items rather than copying ordinary rigs: no inherited bonuses,
+        # drawbacks, calibration costs or prerequisites are verified for this preview.
+        for familyIndex, family in enumerate(FAMILIES):
+            description = EXPERIMENTAL_WARNING + FAMILY_DESCRIPTIONS[familyIndex]
+            for sizeIndex, size in enumerate(('Small', 'Medium', 'Large')):
+                item = eos.gamedata.Item()
+                item.ID = TYPE_ID_BASE + familyIndex * 3 + sizeIndex
+                item.group = group
+                item.marketGroup = marketGroup
+                item.metaGroup = factionMetaGroup
+                item.published = True
+                item.iconID = group.iconID
+                for suffix in eos.config.translation_mapping.values():
+                    setattr(item, f'typeName{suffix}', f'{size} {family} Synchronizer [Experimental]')
+                    setattr(item, f'_description{suffix}', description)
+                eos.db.gamedata_session.add(item)
+                eos.db.gamedata_session.flush()
+                _hardcodeAttribs(item.ID, {'rigSize': sizeIndex + 1, 'maxGroupFitted': 1})
+                _hardcodeEffects(item.ID, {
+                    2663: 'rigSlot',
+                    EFFECT_ID: 'pyfaCustomExperimentalSynchronizer'})
+        eos.db.gamedata_session.flush()
+
+    def hardcodeNavyBattlecruisers():
+        from eos.navyBattlecruisers import EFFECT_ID, EXPERIMENTAL_WARNING, GROUP_ID, HULLS
+
+        for hull in HULLS:
+            base = eos.db.gamedata_session.query(eos.gamedata.Item).filter(
+                eos.gamedata.Item.ID == hull['baseTypeID']).one()
+            item = eos.gamedata.Item()
+            item.ID = hull['typeID']
+            item.groupID = GROUP_ID
+            item.marketGroupID = base.marketGroupID
+            item.metaGroupID = 4  # Faction
+            item.varParent = base
+            item.published = True
+            for field in ('raceID', 'factionID', 'iconID', 'graphicID', 'reqskills'):
+                setattr(item, field, getattr(base, field))
+            for suffix in eos.config.translation_mapping.values():
+                setattr(item, f'typeName{suffix}', hull['name'])
+                setattr(item, f'_description{suffix}', EXPERIMENTAL_WARNING + hull['description'])
+            eos.db.gamedata_session.add(item)
+            eos.db.gamedata_session.flush()
+            # Attribute rows belong to a type. Copy their values into independent
+            # rows; _copyItem does not clone them and sharing would mutate T1 data.
+            for name, original in base.attributes.items():
+                if name.startswith(('shipBonus', 'bcLargeTurret')):
+                    continue
+                attribute = eos.gamedata.Attribute()
+                attribute.typeID = item.ID
+                attribute.attributeID = original.attributeID
+                attribute.value = original.value
+                eos.db.gamedata_session.add(attribute)
+            eos.db.gamedata_session.flush()
+            high, mid, low = hull['slots']
+            _hardcodeAttribs(item.ID, {
+                'hiSlots': high, 'medSlots': mid, 'lowSlots': low,
+                'turretSlotsLeft': hull['turrets'],
+                'launcherSlotsLeft': hull['launchers']})
+            # No inherited T1 effects: the custom effect owns every navy bonus.
+            _hardcodeEffects(item.ID, {EFFECT_ID: 'pyfaCustomExperimentalNavyBattlecruiser'})
+        eos.db.gamedata_session.flush()
+
     hardcodeSuppressionTackleRange()
     hardcodeSovUpgradeBuffs()
     hardcodeTrigSystemEffects()
@@ -975,6 +1060,8 @@ def update_db():
 
     hardcodeHerald()
     hardcodePenitence()
+    hardcodeSynchronizers()
+    hardcodeNavyBattlecruisers()
 
     eos.db.gamedata_session.commit()
     with eos.db.gamedata_engine.begin() as connection:
