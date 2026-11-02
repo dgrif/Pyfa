@@ -280,6 +280,17 @@ def test_rig_size_and_one_per_ship_limit_apply_across_families(size):
 
 
 @pytest.mark.parametrize('size', (0, 1, 2))
+@pytest.mark.parametrize('family', FAMILIES)
+def test_synchronizers_contribute_provisional_calibration_cost(family, size):
+    fit, _ = make_fit(family, size)
+    recalculate(fit)
+    assert fit.calibrationUsed == 250
+    add_module(fit, ('Small', 'Medium', 'Large')[size] + ' Ancillary Current Router I')
+    recalculate(fit)
+    assert fit.calibrationUsed == 350
+
+
+@pytest.mark.parametrize('size', (0, 1, 2))
 def test_synchronizers_have_video_metadata_and_occupy_cargo_space(size):
     fit, _ = make_fit('Federation Navy', size)
     for index in range(len(FAMILIES)):

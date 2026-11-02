@@ -94,7 +94,7 @@ percentage points to displayed resistance.
 
 True Sansha's afterburner speed bonus shares the module's stacking pool with overheating, but remains independent of nanofiber/overdrive stacking on ship velocity. The eleven-module Phantasm demo reproduces 1,494.4 m/s without the rig, 1,742.7 m/s with it, and 2,556.01 m/s overheated. Other preview effects retain the existing unverified no-stacking assumptions.
 
-**Calibration costs and skill prerequisites remain unmodeled.** Local armor-repair and shield-booster bonuses currently exclude ancillary and remote repair modules; that scope is not confirmed by the video. Shadow Serpentis retains the Traits tab's −60% targeting-range penalty, although the two demo fits show a 50% reduction; this discrepancy is unresolved. Fitting feasibility and combat results are therefore not authoritative.
+**Calibration is provisionally set to 250 for every Synchronizer family and size; this value is unverified.** Skill prerequisites remain unmodeled. Local armor-repair and shield-booster bonuses currently exclude ancillary and remote repair modules; that scope is not confirmed by the video. Shadow Serpentis retains the Traits tab's −60% targeting-range penalty, although the two demo fits show a 50% reduction; this discrepancy is unresolved. Fitting feasibility and combat results are therefore not authoritative.
 
 Rigs use private type IDs `1001000`–`1001026`; hulls use `1001100`–`1001103`.
 These are not official EVE IDs. Exports containing them are local-build data,

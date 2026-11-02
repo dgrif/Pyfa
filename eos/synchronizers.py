@@ -46,7 +46,8 @@ EXPERIMENTAL_WARNING = (
     'The shown -10% CPU output drawback is modeled without Synchronizer Rigging mitigation, whose exact '
     'formula is unverified and NOT modeled. Volume 5 m3, structure 40 HP, Tech 1 and Meta 8 are shown on '
     'the four empire and True Sansha medium rigs; these values are assumed for the other families and sizes. '
-    'Calibration, skill prerequisites (including Synchronizer Rigging), other unverified '
+    'Calibration cost is provisionally set to 250 for every family and size; this value is unverified. '
+    'Skill prerequisites (including Synchronizer Rigging), other unverified '
     'size-specific fitting details, and build/LP costs are omitted, not verified as zero. '
     'Results are not authoritative and may omit important fitting restrictions. '
 )

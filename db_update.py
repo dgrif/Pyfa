@@ -990,7 +990,7 @@ def update_db():
         eos.db.gamedata_session.add_all((group, marketGroup))
         factionMetaGroup = eos.db.gamedata_session.query(eos.gamedata.MetaGroup).filter(
             eos.gamedata.MetaGroup.ID == 4).one()
-        # Avoid inheriting unrelated rig bonuses or unknown calibration/skill requirements.
+        # Avoid inheriting unrelated rig bonuses or unknown skill requirements.
         for familyIndex, family in enumerate(FAMILIES):
             description = EXPERIMENTAL_WARNING + FAMILY_DESCRIPTIONS[familyIndex]
             for sizeIndex, size in enumerate(('Small', 'Medium', 'Large')):
@@ -1009,6 +1009,8 @@ def update_db():
                 eos.db.gamedata_session.flush()
                 _hardcodeAttribs(item.ID, {
                     'rigSize': sizeIndex + 1, 'maxGroupFitted': 1,
+                    # TODO: Verify the provisional 250 calibration cost for all families/sizes against official data.
+                    'upgradeCost': 250,
                     'drawback': -10, 'volume': 5, 'hp': 40, 'techLevel': 1})
                 _hardcodeEffects(item.ID, {
                     2663: 'rigSlot',
