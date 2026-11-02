@@ -44277,15 +44277,16 @@ class Effect100300(BaseEffect):
         if family == 'Federation Navy':
             for attr in ('damageMultiplier', 'trackingSpeed'):
                 fit.modules.filteredItemBoost(
-                    lambda mod: mod.item.group.name == 'Hybrid Weapon', attr, bonus, **kwargs)
+                    lambda mod: mod.item.group.name == 'Hybrid Weapon',
+                    attr, bonus, stackingPenalties=True, **kwargs)
             fit.modules.filteredItemBoost(
                 lambda mod: mod.item.group.name == 'Armor Repair Unit',
-                'armorDamageAmount', bonus, **kwargs)
+                'armorDamageAmount', bonus, stackingPenalties=True, **kwargs)
             fit.ship.boostItemAttr('hp', bonus, **kwargs)
         elif family == 'Imperial Navy':
             fit.modules.filteredItemBoost(
                 lambda mod: mod.item.group.name == 'Energy Weapon',
-                'damageMultiplier', bonus, **kwargs)
+                'damageMultiplier', bonus, stackingPenalties=True, **kwargs)
             fit.modules.filteredItemBoost(
                 lambda mod: mod.item.group.name == 'Energy Weapon',
                 'capacitorNeed', -bonus, **kwargs)
@@ -44294,18 +44295,19 @@ class Effect100300(BaseEffect):
         elif family == 'Republic Fleet':
             for attr in ('damageMultiplier', 'trackingSpeed'):
                 fit.modules.filteredItemBoost(
-                    lambda mod: mod.item.group.name == 'Projectile Weapon', attr, bonus, **kwargs)
+                    lambda mod: mod.item.group.name == 'Projectile Weapon',
+                    attr, bonus, stackingPenalties=True, **kwargs)
             fit.modules.filteredItemBoost(
                 lambda mod: mod.item.group.name == 'Shield Booster',
                 'duration', -bonus, **kwargs)
-            fit.ship.boostItemAttr('maxVelocity', bonus, **kwargs)
+            fit.ship.boostItemAttr('maxVelocity', bonus, stackingPenalties=True, **kwargs)
         elif family == 'Caldari Navy':
             for attr in ('emDamage', 'thermalDamage', 'kineticDamage', 'explosiveDamage', 'maxVelocity'):
                 fit.modules.filteredChargeBoost(
                     lambda mod: mod.charge.requiresSkill('Missile Launcher Operation'),
-                    attr, bonus, **kwargs)
-            for attr in ('shieldCapacity', 'maxTargetRange'):
-                fit.ship.boostItemAttr(attr, bonus, **kwargs)
+                    attr, bonus, stackingPenalties=True, **kwargs)
+            fit.ship.boostItemAttr('shieldCapacity', bonus, **kwargs)
+            fit.ship.boostItemAttr('maxTargetRange', bonus, stackingPenalties=True, **kwargs)
         else:
             applyPirateBonuses(fit, module, family, count, **kwargs)
 

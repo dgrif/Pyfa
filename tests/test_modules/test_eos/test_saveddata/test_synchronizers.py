@@ -12,6 +12,7 @@ from eos.const import FittingModuleState
 from eos.gamedata import Item
 from eos.saveddata.cargo import Cargo
 from eos.saveddata.character import Character
+from eos.saveddata.commandLink import CommandLink
 from eos.saveddata.drone import Drone
 from eos.saveddata.fit import Fit
 from eos.saveddata.module import Module
@@ -38,6 +39,7 @@ def make_fit(family, size=0):
 def add_module(fit, name, state=FittingModuleState.ONLINE):
     module = Module(eos.db.getItem(name))
     module.state = state
+    module.owner = fit
     fit.modules.append(module)
     return module
 
@@ -501,3 +503,136 @@ def test_shadow_resists_incoming_webs_without_strengthening_outgoing_webs(count)
     assert fit.ship.getModifiedItemAttr('maxVelocity') == pytest.approx(
         (ordinary_speed + (webbed_speed - ordinary_speed) * resistance_factor) * velocity_factor)
     assert outgoing.getModifiedItemAttr('speedFactor') == pytest.approx(outgoing_strength)
+
+
+@pytest.mark.parametrize('count', (0, 15))
+@pytest.mark.parametrize('family,kind,target_name,attr,other_name,bonus,penalized', (
+    ('Federation Navy', 'module', '75mm Gatling Rail II', 'damageMultiplier',
+     'Magnetic Field Stabilizer II', 5, True),
+    ('Imperial Navy', 'module', 'Dual Light Pulse Laser II', 'damageMultiplier', 'Heat Sink II', 5, True),
+    ('Republic Fleet', 'module', '125mm Gatling AutoCannon II', 'damageMultiplier', 'Gyrostabilizer II', 5, True),
+    ('Caldari Navy', 'charge', 'Light Missile Launcher II', 'kineticDamage', 'Ballistic Control System II', 5, True),
+    ('Dark Blood', 'module', 'Dual Light Pulse Laser II', 'damageMultiplier', 'Heat Sink II', 5, True),
+    ('Domination', 'module', '125mm Gatling AutoCannon II', 'damageMultiplier', 'Gyrostabilizer II', 5, True),
+    ('Dread Guristas', 'drone', 'Hobgoblin II', 'damageMultiplier', 'Drone Damage Amplifier II', 10, True),
+    ('Shadow Serpentis', 'module', '75mm Gatling Rail II', 'damageMultiplier',
+     'Magnetic Field Stabilizer II', 5, True),
+    ('True Sansha', 'module', 'Dual Light Pulse Laser II', 'damageMultiplier', 'Heat Sink II', 5, True),
+    ('Federation Navy', 'module', '75mm Gatling Rail II', 'trackingSpeed', 'Tracking Computer II', 5, True),
+    ('Republic Fleet', 'module', '125mm Gatling AutoCannon II', 'trackingSpeed', 'Tracking Computer II', 5, True),
+    ('True Sansha', 'module', 'Dual Light Pulse Laser II', 'trackingSpeed', 'Tracking Computer II', 5, True),
+    ('Federation Navy', 'module', 'Small Armor Repairer II', 'armorDamageAmount',
+     'Small Auxiliary Nano Pump I', 5, True),
+    ('Domination', 'module', '125mm Gatling AutoCannon II', 'falloff', 'Tracking Computer II', 10, True),
+    ('Shadow Serpentis', 'module', '75mm Gatling Rail II', 'falloff', 'Tracking Computer II', 10, True),
+    ('Caldari Navy', 'charge', 'Light Missile Launcher II', 'maxVelocity', 'Missile Guidance Computer II', 5, True),
+    ('Republic Fleet', 'ship', None, 'maxVelocity', 'Overdrive Injector System II', 5, True),
+    ('Shadow Serpentis', 'ship', None, 'maxVelocity', 'Overdrive Injector System II', 5, True),
+    ('Domination', 'ship', None, 'warpSpeedMultiplier', 'Small Hyperspatial Velocity Optimizer I', 5, True),
+    ('Domination', 'command', None, 'signatureRadius', 'skirmish_evasive', -10, True),
+    ('Caldari Navy', 'ship', None, 'maxTargetRange', 'Sensor Booster II', 5, True),
+    ('Dread Guristas', 'ship', None, 'shieldEmDamageResonance', 'Multispectrum Shield Hardener II', -5, True),
+    ('Dread Guristas', 'ship', None, 'shieldThermalDamageResonance', 'Multispectrum Shield Hardener II', -5, True),
+    ('Dread Guristas', 'ship', None, 'shieldKineticDamageResonance', 'Multispectrum Shield Hardener II', -5, True),
+    ('Dread Guristas', 'ship', None, 'shieldExplosiveDamageResonance', 'Multispectrum Shield Hardener II', -5, True),
+    ('Dread Guristas', 'module', 'Multispectral ECM II', 'maxRange', 'Signal Distortion Amplifier II', 5, True),
+    ('Dread Guristas', 'module', 'Multispectral ECM II', 'scanRadarStrengthBonus',
+     'Signal Distortion Amplifier II', 5, True),
+    ('Dread Guristas', 'module', 'Multispectral ECM II', 'scanLadarStrengthBonus',
+     'Signal Distortion Amplifier II', 5, True),
+    ('Dread Guristas', 'module', 'Multispectral ECM II', 'scanMagnetometricStrengthBonus',
+     'Signal Distortion Amplifier II', 5, True),
+    ('Dread Guristas', 'module', 'Multispectral ECM II', 'scanGravimetricStrengthBonus',
+     'Signal Distortion Amplifier II', 5, True),
+    ('Federation Navy', 'ship', None, 'hp', 'Reinforced Bulkheads II', 5, False),
+    ('Imperial Navy', 'ship', None, 'armorHP', 'Small Trimark Armor Pump I', 5, False),
+    ('Imperial Navy', 'ship', None, 'capacitorCapacity', 'Power Diagnostic System II', 5, False),
+    ('Caldari Navy', 'ship', None, 'shieldCapacity', 'Small Core Defense Field Extender I', 5, False),
+    ('Imperial Navy', 'module', 'Dual Light Pulse Laser II', 'capacitorNeed',
+     'Small Energy Discharge Elutriation I', -5, False),
+    ('Republic Fleet', 'module', 'Small Shield Booster II', 'duration',
+     'Small Core Defense Operational Solidifier I', -5, False),
+    ('Dread Guristas', 'drone', 'Hobgoblin II', 'shieldCapacity', 'Small Drone Durability Enhancer I', 10, False),
+    ('Dread Guristas', 'drone', 'Hobgoblin II', 'armorHP', 'Small Drone Durability Enhancer I', 10, False),
+    ('Dread Guristas', 'drone', 'Hobgoblin II', 'hp', 'Small Drone Durability Enhancer I', 10, False),
+))
+def test_synchronizers_share_native_stacking_pools(
+        family, kind, target_name, attr, other_name, bonus, penalized, count):
+    fit, rig = make_fit(family, 2)
+    if kind in ('ship', 'command'):
+        target = fit.ship
+    elif kind == 'drone':
+        target = Drone(eos.db.getItem(target_name))
+        target.amount = target.amountActive = 1
+        fit.drones.append(target)
+    else:
+        target = add_module(fit, target_name)
+        if kind == 'charge':
+            target.charge = eos.db.getItem('Scourge Light Missile')
+    read_attr = target.getModifiedChargeAttr if kind == 'charge' else target.getModifiedItemAttr
+    if kind == 'command':
+        other = CommandLink(other_name, strength=0, active=False)
+        fit.commandLinks.append(other)
+    else:
+        other = add_module(fit, other_name, FittingModuleState.OFFLINE)
+    for _ in range(count):
+        add_faction_module(fit, family)
+    rig.state = FittingModuleState.OFFLINE
+    recalculate(fit)
+    baseline = read_attr(attr)
+    if kind == 'command':
+        other.active = True
+    else:
+        other.state = FittingModuleState.ACTIVE
+    recalculate(fit)
+    native_value = read_attr(attr)
+    native_bonus = native_value / baseline - 1
+    assert native_bonus != 0
+    rig_bonus = (bonus + (count if bonus > 0 else -count)) / 100
+    if penalized:
+        first, second = sorted((native_bonus, rig_bonus), key=abs, reverse=True)
+        expected = baseline * (1 + first) * (1 + second * 0.8691199808)
+    else:
+        expected = native_value * (1 + rig_bonus)
+    rig.state = FittingModuleState.ONLINE
+    recalculate(fit)
+    assert read_attr(attr) == pytest.approx(expected)
+    rig.state = FittingModuleState.OFFLINE
+    recalculate(fit)
+    assert read_attr(attr) == pytest.approx(native_value)
+
+
+def test_shadow_proteus_reproduces_video_damage():
+    fit = Fit(Ship(eos.db.getItem('Proteus')), 'Video 24:08')
+    fit.character = Character('All 5', defaultLevel=5)
+    names = (
+        'Proteus Defensive - Nanobot Injector', 'Proteus Core - Friction Extension Processor',
+        'Proteus Offensive - Hybrid Encoding Platform', 'Proteus Propulsion - Localized Injectors',
+        'Corpum B-Type Medium Energy Neutralizer', 'Shadow Serpentis 50MN Microwarpdrive',
+        'Shadow Serpentis Warp Scrambler', 'Medium F-RX Compact Capacitor Booster',
+        'Shadow Serpentis Damage Control', 'Shadow Serpentis Medium Armor Repairer',
+        'Shadow Serpentis Magnetic Field Stabilizer', 'Shadow Serpentis Multispectrum Energized Membrane',
+        'Shadow Serpentis Explosive Armor Hardener', 'Medium Hybrid Ambit Extension I',
+        'Medium Ionic Field Projector I', 'Medium Shadow Serpentis Synchronizer [Experimental]')
+    for name in names:
+        add_module(fit, name)
+    for _ in range(6):
+        gun = add_module(fit, 'Shadow Serpentis Heavy Neutron Blaster', FittingModuleState.ACTIVE)
+        gun.charge = eos.db.getItem('Null M')
+    for _ in range(2):
+        computer = add_module(fit, 'Shadow Serpentis Tracking Computer', FittingModuleState.ACTIVE)
+        computer.charge = eos.db.getItem('Optimal Range Script')
+    # Drone names are unreadable; five Warrior IIs reproduce the shown 80.4 DPS.
+    drones = Drone(eos.db.getItem('Warrior II'))
+    drones.amount = drones.amountActive = 5
+    fit.drones.append(drones)
+    fit.factorReload = False
+    recalculate(fit)
+    assert fit.getWeaponDps().total == pytest.approx(515.0207281389661)
+    assert fit.getDroneDps().total == pytest.approx(80.4375)
+    assert fit.getTotalDps().total == pytest.approx(595.4582281389661)
+    assert fit.getWeaponVolley().total == pytest.approx(1732.6327336051095)
+    assert fit.ship.getModifiedItemAttr('maxTargetRange') == 43750
+    fit.factorReload = True
+    recalculate(fit)
+    assert fit.getTotalDps().total == pytest.approx(586.0647021493301)

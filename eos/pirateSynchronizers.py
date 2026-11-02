@@ -17,33 +17,37 @@ def applyPirateBonuses(fit, module, family, count, **kwargs):
                 fit.modules.filteredItemBoost(matching, attr, bonus, **kwargs)
         fit.modules.filteredItemBoost(
             lambda mod: mod.item.group.name == 'Energy Weapon',
-            'damageMultiplier', bonus, **kwargs)
+            'damageMultiplier', bonus, stackingPenalties=True, **kwargs)
     elif family == 'Domination':
         for attr in ('shieldCapacity', 'armorHP', 'hp'):
             fit.ship.boostItemAttr(attr, -30, **kwargs)
-        fit.ship.boostItemAttr('signatureRadius', -majorBonus, **kwargs)
-        fit.ship.boostItemAttr('warpSpeedMultiplier', bonus, **kwargs)
+        fit.ship.boostItemAttr('signatureRadius', -majorBonus, stackingPenalties=True, **kwargs)
+        fit.ship.boostItemAttr('warpSpeedMultiplier', bonus, stackingPenalties=True, **kwargs)
         for attr, amount in (('falloff', majorBonus), ('damageMultiplier', bonus)):
             fit.modules.filteredItemBoost(
-                lambda mod: mod.item.group.name == 'Projectile Weapon', attr, amount, **kwargs)
+                lambda mod: mod.item.group.name == 'Projectile Weapon',
+                attr, amount, stackingPenalties=True, **kwargs)
     elif family == 'Dread Guristas':
         fit.extraAttributes.boost('droneControlRange', -60, **kwargs)
         for attr in ('damageMultiplier', 'shieldCapacity', 'armorHP', 'hp'):
             fit.drones.filteredItemBoost(
-                lambda drone: drone.item.requiresSkill('Drones'), attr, majorBonus, **kwargs)
+                lambda drone: drone.item.requiresSkill('Drones'),
+                attr, majorBonus, stackingPenalties=attr == 'damageMultiplier', **kwargs)
         for damageType in ('Em', 'Thermal', 'Kinetic', 'Explosive'):
-            fit.ship.boostItemAttr('shield{}DamageResonance'.format(damageType), -bonus, **kwargs)
+            fit.ship.boostItemAttr(
+                'shield{}DamageResonance'.format(damageType), -bonus, stackingPenalties=True, **kwargs)
         for attr in ('maxRange', 'scanRadarStrengthBonus', 'scanLadarStrengthBonus',
                      'scanMagnetometricStrengthBonus', 'scanGravimetricStrengthBonus'):
             fit.modules.filteredItemBoost(
-                lambda mod: mod.item.group.name == 'ECM', attr, bonus, **kwargs)
+                lambda mod: mod.item.group.name == 'ECM', attr, bonus, stackingPenalties=True, **kwargs)
     elif family == 'Shadow Serpentis':
         fit.ship.boostItemAttr('maxTargetRange', -60, **kwargs)
         fit.ship.boostItemAttr('stasisWebifierResistance', -majorBonus, **kwargs)
-        fit.ship.boostItemAttr('maxVelocity', bonus, **kwargs)
+        fit.ship.boostItemAttr('maxVelocity', bonus, stackingPenalties=True, **kwargs)
         for attr, amount in (('falloff', majorBonus), ('damageMultiplier', bonus)):
             fit.modules.filteredItemBoost(
-                lambda mod: mod.item.group.name == 'Hybrid Weapon', attr, amount, **kwargs)
+                lambda mod: mod.item.group.name == 'Hybrid Weapon',
+                attr, amount, stackingPenalties=True, **kwargs)
     elif family == 'True Sansha':
         afterburners = lambda mod: mod.item.requiresSkill('Afterburner')
         fit.modules.filteredItemBoost(afterburners, 'capacitorNeed', 400, **kwargs)
@@ -54,4 +58,5 @@ def applyPirateBonuses(fit, module, family, count, **kwargs):
         fit.modules.filteredItemBoost(afterburners, 'overloadSpeedFactorBonus', majorBonus, **kwargs)
         for attr in ('damageMultiplier', 'trackingSpeed'):
             fit.modules.filteredItemBoost(
-                lambda mod: mod.item.group.name == 'Energy Weapon', attr, bonus, **kwargs)
+                lambda mod: mod.item.group.name == 'Energy Weapon',
+                attr, bonus, stackingPenalties=True, **kwargs)
