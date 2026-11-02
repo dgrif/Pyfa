@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import os
 import sys
 
@@ -50,6 +51,59 @@ def recalculate(fit):
 def assert_raw_factors(module, factors):
     for attr, factor in factors.items():
         assert module.getModifiedItemAttr(attr) == pytest.approx(module.item.getAttribute(attr, 0) * factor)
+
+
+@pytest.mark.parametrize('index,expected,original', (
+    (0, {
+        'shieldCapacity': 2000, 'armorHP': 2700, 'hp': 2500, 'powerOutput': 1200,
+        'maxVelocity': 225, 'agility': 0.47, 'maxTargetRange': 70000,
+        'scanResolution': 230, 'scanRadarStrength': 22,
+    }, {
+        'shieldCapacity': 1575, 'armorHP': 2160, 'hp': 1980, 'powerOutput': 1375,
+        'maxVelocity': 200, 'agility': 0.495, 'maxTargetRange': 65000,
+        'scanResolution': 220, 'scanRadarStrength': 18,
+    }),
+    (1, {
+        'shieldCapacity': 2200, 'armorHP': 2400, 'hp': 2750, 'maxVelocity': 265,
+        'agility': 0.43, 'maxTargetRange': 75000, 'maxLockedTargets': 8,
+        'scanResolution': 220, 'scanMagnetometricStrength': 25,
+    }, {
+        'shieldCapacity': 1750, 'armorHP': 1890, 'hp': 2180, 'maxVelocity': 235,
+        'agility': 0.45, 'maxTargetRange': 70000, 'maxLockedTargets': 7,
+        'scanResolution': 210, 'scanMagnetometricStrength': 20,
+    }),
+    (2, {'cpuOutput': 475, 'powerOutput': 650}, {'cpuOutput': 425, 'powerOutput': 875}),
+    (3, {
+        'shieldCapacity': 2400, 'armorHP': 2250, 'hp': 2250, 'maxVelocity': 280,
+        'agility': 0.52, 'maxTargetRange': 65000, 'maxLockedTargets': 7,
+        'scanResolution': 240, 'scanLadarStrength': 21, 'capacity': 600,
+        'cpuOutput': 375, 'powerOutput': 865,
+    }, {
+        'shieldCapacity': 1890, 'armorHP': 1800, 'hp': 1800, 'maxVelocity': 250,
+        'agility': 0.54, 'maxTargetRange': 60000, 'maxLockedTargets': 6,
+        'scanResolution': 230, 'scanLadarStrength': 17, 'capacity': 535,
+        'cpuOutput': 342, 'powerOutput': 1000,
+    }),
+))
+def test_video_raw_stats_replace_t1_values_without_modifying_originals(index, expected, original):
+    # Video 02:00/02:30, 04:30, 07:15 and 09:55; Tornado CPU/PG from the 08:55 fit at max skills.
+    navy = eos.db.getItem(HULLS[index]['typeID'])
+    base = eos.db.getItem(HULLS[index]['baseTypeID'])
+    assert {attr: navy.getAttribute(attr) for attr in expected} == pytest.approx(expected)
+    assert {attr: base.getAttribute(attr) for attr in original} == pytest.approx(original)
+
+
+@pytest.mark.parametrize('index,attributes', (
+    (0, ('maxLockedTargets',)),
+    (1, ('powerOutput',)),
+    (2, ('shieldCapacity', 'armorHP', 'hp', 'maxVelocity', 'agility', 'maxTargetRange',
+         'maxLockedTargets', 'scanResolution', 'scanGravimetricStrength')),
+))
+def test_unshown_navy_stats_keep_explicit_t1_fallbacks(index, attributes):
+    navy = eos.db.getItem(HULLS[index]['typeID'])
+    base = eos.db.getItem(HULLS[index]['baseTypeID'])
+    for attr in attributes:
+        assert navy.getAttribute(attr) == base.getAttribute(attr)
 
 
 @pytest.mark.parametrize('index', range(4))

@@ -1,3 +1,4 @@
+# ruff: noqa: E402
 import os
 import sys
 
@@ -10,6 +11,7 @@ import eos.db
 from eos.const import FittingModuleState
 from eos.gamedata import Item
 from eos.saveddata.cargo import Cargo
+from eos.saveddata.character import Character
 from eos.saveddata.drone import Drone
 from eos.saveddata.fit import Fit
 from eos.saveddata.module import Module
@@ -20,7 +22,7 @@ from eos.synchronizers import FAMILIES, TYPE_ID_BASE
 SHIP_ATTRIBUTES = (
     'hp', 'armorHP', 'shieldCapacity', 'capacitorCapacity',
     'maxVelocity', 'maxTargetRange', 'signatureRadius', 'rechargeRate',
-    'warpSpeedMultiplier', 'stasisWebifierResistance',
+    'warpSpeedMultiplier', 'stasisWebifierResistance', 'cpuOutput',
     'shieldEmDamageResonance', 'shieldThermalDamageResonance',
     'shieldKineticDamageResonance', 'shieldExplosiveDamageResonance')
 
@@ -60,6 +62,7 @@ def ship_snapshot(fit):
 
 def ship_factors(family, count):
     factors = dict.fromkeys(SHIP_ATTRIBUTES, 1)
+    factors['cpuOutput'] = 0.9
     bonus = (5 + count) / 100
     if family == 'Federation Navy':
         factors['hp'] = 1 + bonus
@@ -276,6 +279,45 @@ def test_rig_size_and_one_per_ship_limit_apply_across_families(size):
     assert second_family.fits(fit)
 
 
+@pytest.mark.parametrize('size', (0, 1, 2))
+def test_synchronizers_have_video_metadata_and_occupy_cargo_space(size):
+    fit, _ = make_fit('Federation Navy', size)
+    for index in range(len(FAMILIES)):
+        item = eos.db.getItem(TYPE_ID_BASE + index * 3 + size)
+        assert item.metaLevel == 8
+        assert item.getAttribute('techLevel') == 1
+        assert item.getAttribute('hp') == 40
+        cargo = Cargo(item)
+        cargo.amount = 2
+        fit.cargo.append(cargo)
+    recalculate(fit)
+    assert fit.cargoBayUsed == 90
+
+
+def test_true_sansha_phantasm_matches_video_speed_and_cpu():
+    fit = Fit(Ship(eos.db.getItem('Phantasm')), 'Video 26:14-26:35')
+    fit.character = Character('All 5', defaultLevel=5)
+    names = (
+        ['True Sansha Heavy Pulse Laser'] * 3
+        + ['True Sansha Small Energy Neutralizer', 'True Sansha Warp Disruptor',
+           'True Sansha Stasis Webifier', 'True Sansha Small Capacitor Booster']
+        + ['True Sansha Heat Sink'] * 3 + ['Nanofiber Internal Structure II'])
+    for name in names:
+        add_module(fit, name)
+    afterburner = add_module(fit, 'True Sansha 10MN Afterburner')
+    rig = add_module(fit, TYPE_ID_BASE + FAMILIES.index('True Sansha') * 3 + 1)
+    for rig_state, ab_state, speed, cpu in (
+        (FittingModuleState.OFFLINE, FittingModuleState.ACTIVE, 1494.4, 475),
+        (FittingModuleState.ONLINE, FittingModuleState.ACTIVE, 1742.7, 427.5),
+        (FittingModuleState.ONLINE, FittingModuleState.OVERHEATED, 2556.01, 427.5),
+    ):
+        rig.state = rig_state
+        afterburner.state = ab_state
+        recalculate(fit)
+        assert fit.ship.getModifiedItemAttr('maxVelocity') == pytest.approx(speed, abs=0.05, rel=0)
+        assert fit.ship.getModifiedItemAttr('cpuOutput') == cpu
+
+
 @pytest.mark.parametrize('family', FAMILIES[4:])
 @pytest.mark.parametrize('rig_last', (False, True))
 def test_pirate_module_traits_scale_without_leaking(family, rig_last):
@@ -386,9 +428,10 @@ def test_pirate_heat_bonuses_only_change_overheated_benefits(family, rig_last):
             assert mod.getModifiedItemAttr('duration') == pytest.approx(
                 value * (1 + heat[mod] * heat_factor / 100))
         for mod, value in speeds.items():
-            speed_factor = factor if family == 'True Sansha' and mod is afterburner else 1
+            heat_factor = factor if family == 'True Sansha' and mod is afterburner else 1
+            speed_factor = 1 + (heat_factor - 1) * 0.8691199808
             assert mod.getModifiedItemAttr('speedFactor') == pytest.approx(
-                value * speed_factor * (1 + heat[mod] * speed_factor / 100))
+                value * speed_factor * (1 + heat[mod] * heat_factor / 100))
         rig.state = FittingModuleState.OFFLINE
         recalculate(fit)
         for mod, value in durations.items():

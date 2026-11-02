@@ -47,10 +47,11 @@ def applyPirateBonuses(fit, module, family, count, **kwargs):
     elif family == 'True Sansha':
         afterburners = lambda mod: mod.item.requiresSkill('Afterburner')
         fit.modules.filteredItemBoost(afterburners, 'capacitorNeed', 400, **kwargs)
-        # This modifies the propulsion bonus, not the stacking-penalized ship
-        # velocity pool shared by nanofibers and overdrives.
-        for attr in ('speedFactor', 'overloadSpeedFactorBonus'):
-            fit.modules.filteredItemBoost(afterburners, attr, majorBonus, **kwargs)
+        # Shares module speedFactor stacking with overload, not the ship velocity
+        # pool used by nanofibers/overdrives (Phantasm demo, video 26:35).
+        fit.modules.filteredItemBoost(
+            afterburners, 'speedFactor', majorBonus, stackingPenalties=True, **kwargs)
+        fit.modules.filteredItemBoost(afterburners, 'overloadSpeedFactorBonus', majorBonus, **kwargs)
         for attr in ('damageMultiplier', 'trackingSpeed'):
             fit.modules.filteredItemBoost(
                 lambda mod: mod.item.group.name == 'Energy Weapon', attr, bonus, **kwargs)

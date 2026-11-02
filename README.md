@@ -31,11 +31,7 @@ The following is a list of pyfa packages available for certain distributions.
 
 ## Local Fractured Skies preview
 
-This local build includes four **experimental navy attack battlecruisers** and
-27 **experimental Synchronizer rigs**. Sources:
-`EVE_Fractured_Skies_Development_Reference.pdf`, pages 1–13, and the desktop
-pirate-trait screenshot `Screenshot_20261101_214353.png`.
-The preview is not complete, final game data.
+This local build includes four **experimental navy attack battlecruisers** and 27 **experimental Synchronizer rigs**. Sources: the developer interview in `mytmpdata\evepatch.mkv` and `mytmpdata\Fractured-Skies-All-Stats.pdf` (15 pages), compared against the video's readable stats and fitting demonstrations. These local reference files are not committed. The preview is not complete, final game data.
 
 Start the installed local build with:
 
@@ -47,7 +43,7 @@ Start the installed local build with:
 
 The fitting browser's **Attack Battlecruiser** category includes:
 
-| Experimental hull | High / mid / low | Weapon hardpoints | Approximate raw-stat baseline |
+| Experimental hull | High / mid / low | Weapon hardpoints | Fallback for unverified stats |
 | --- | --- | --- | --- |
 | Oracle Navy Issue | 7 / 3 / 7 | 6 turrets | T1 Oracle |
 | Talos Navy Issue | 7 / 4 / 6 | 6 turrets | T1 Talos |
@@ -60,12 +56,9 @@ mass on Talos, cruise missiles/torpedoes on Naga, and large projectiles plus
 reduced MWD signature penalty on Tornado. Naga has no hybrid or rapid-heavy
 bonuses; Talos does not retain its T1 tracking bonus.
 
-**Only layouts, hardpoints and documented bonuses are navy data.** With explicit
-local-build approval, all other hull attributes retain the corresponding T1
-values unchanged: HP/resistances, CPU/powergrid, capacitor, navigation, targeting,
-cargo, drones, rig fitting and skill prerequisites. These are approximations,
-not verified navy stats. No speculative 25% HP or approximately 12% speed increase
-is applied. Every hull name and description identifies it as experimental.
+**Layouts, hardpoints, documented bonuses and observed raw-stat changes are modeled.** Oracle, Talos and Tornado use the shown navy HP, speed, agility and targeting/sensor changes; Oracle and Naga use the shown powergrid/CPU changes, and Tornado uses the shown cargo capacity. Tornado CPU (375 tf) and powergrid (865 MW) are inferred from the one-MWD fit totals at max skills, allowing display rounding.
+
+Unshown values retain explicitly unverified T1 fallbacks: most Naga raw stats (including base lock range), Talos base powergrid, Oracle maximum locked targets, and skill prerequisites. Other unchanged raw attributes retain their T1 values. No blanket 25% HP or approximately 12% speed increase is guessed. Every hull name and description identifies it as experimental. Rebuild the database with `uv run python db_update.py` after updating these preview definitions.
 
 ### Synchronizer rigs
 
@@ -80,8 +73,7 @@ Offline fitted modules count; ammunition, cargo, drones, Synchronizers and mutat
 modules do not. Matching uses the English item name regardless of UI language,
 not officer/deadspace faction affiliation.
 
-Pirate traits are modeled from the screenshot, including their faction-module
-scaling and fixed penalties:
+Pirate traits are modeled from the video's Traits tabs, including their faction-module scaling and fixed penalties:
 
 - **Dark Blood:** drain amount, neut/Nosferatu overheating benefits, optimal and
   falloff, and laser damage; fixed +200% capacitor recharge time (3×).
@@ -98,12 +90,11 @@ Heat benefits apply only when the affected module is overheated. Resistance
 bonuses reduce damage/web-effectiveness multipliers, rather than adding flat
 percentage points to displayed resistance.
 
-**All CPU-output drawbacks, calibration costs and skill prerequisites are
-unmodeled because their values are missing.** No stacking penalties are assumed
-for the preview effects; the True Sansha afterburner bonus is independent of
-nanofiber/overdrive stacking. Local armor-repair and shield-booster bonuses currently exclude
-ancillary and remote repair modules. Fitting feasibility and combat results are
-therefore not authoritative.
+**The shown −10% CPU-output drawback is modeled for every Synchronizer.** Synchronizer Rigging mitigation is not modeled because the skill's exact formula is unverified. Rigs have 5 m³ volume, 40 structure HP, Tech 1 and Meta 8, as shown on the four empire and True Sansha medium rigs; these metadata values are assumed for the other families and sizes.
+
+True Sansha's afterburner speed bonus shares the module's stacking pool with overheating, but remains independent of nanofiber/overdrive stacking on ship velocity. The eleven-module Phantasm demo reproduces 1,494.4 m/s without the rig, 1,742.7 m/s with it, and 2,556.01 m/s overheated. Other preview effects retain the existing unverified no-stacking assumptions.
+
+**Calibration costs and skill prerequisites remain unmodeled.** Local armor-repair and shield-booster bonuses currently exclude ancillary and remote repair modules; that scope is not confirmed by the video. Shadow Serpentis retains the Traits tab's −60% targeting-range penalty, although the two demo fits show a 50% reduction; this discrepancy is unresolved. Fitting feasibility and combat results are therefore not authoritative.
 
 Rigs use private type IDs `1001000`–`1001026`; hulls use `1001100`–`1001103`.
 These are not official EVE IDs. Exports containing them are local-build data,

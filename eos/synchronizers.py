@@ -29,21 +29,24 @@ FAMILY_DESCRIPTIONS = (
     '+10% projectile turret falloff; +5% projectile turret damage and warp speed.',
     'Modeled: fixed -60% drone control range; +10% drone damage and all drone hitpoint layers; '
     '+5% shield resistances (damage resonance reduction), ECM strength and ECM optimal range.',
-    'Modeled: fixed -60% maximum targeting range; +10% stasis webifier resistance (web effectiveness reduction) '
+    'Modeled: fixed -60% maximum targeting range per traits (the video demo shows 50%; discrepancy unresolved); '
+    '+10% stasis webifier resistance (web effectiveness reduction) '
     'and hybrid turret falloff; +5% hybrid turret damage and ship maximum velocity.',
     'Modeled: fixed +400% afterburner activation capacitor cost (5 times original cost); '
     '+10% afterburner velocity bonus and overheating benefits; +5% energy turret damage and tracking.',
 )
 
 EXPERIMENTAL_WARNING = (
-    'EXPERIMENTAL PREVIEW: non-final fitting data from the Fractured Skies development reference '
-    '(pages 5-13) and desktop screenshot Screenshot_20261101_214353.png. '
+    'EXPERIMENTAL PREVIEW: non-final fitting data from the Fractured Skies video and '
+    'Fractured-Skies-All-Stats.pdf (pages 6-15). '
     'Fit at most one Synchronizer across all families and sizes. '
     'Each exact matching-faction module adds one percentage point to modeled positive bonus magnitudes '
     '(including beneficial reductions); fixed pirate penalties do not scale. '
     'Officer/deadspace affiliation alone and mutaplasmid-modified modules do not count. '
-    'All Synchronizers are reported to reduce CPU output, but the amount and skill mitigation are unverified '
-    'and NOT modeled. Calibration, skill prerequisites (including Synchronizer Rigging), other unverified '
+    'The shown -10% CPU output drawback is modeled without Synchronizer Rigging mitigation, whose exact '
+    'formula is unverified and NOT modeled. Volume 5 m3, structure 40 HP, Tech 1 and Meta 8 are shown on '
+    'the four empire and True Sansha medium rigs; these values are assumed for the other families and sizes. '
+    'Calibration, skill prerequisites (including Synchronizer Rigging), other unverified '
     'size-specific fitting details, and build/LP costs are omitted, not verified as zero. '
-    'Results therefore overstate fitting feasibility and may omit important penalties. '
+    'Results are not authoritative and may omit important fitting restrictions. '
 )

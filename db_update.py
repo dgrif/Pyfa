@@ -990,8 +990,7 @@ def update_db():
         eos.db.gamedata_session.add_all((group, marketGroup))
         factionMetaGroup = eos.db.gamedata_session.query(eos.gamedata.MetaGroup).filter(
             eos.gamedata.MetaGroup.ID == 4).one()
-        # Create new items rather than copying ordinary rigs: no inherited bonuses,
-        # drawbacks, calibration costs or prerequisites are verified for this preview.
+        # Avoid inheriting unrelated rig bonuses or unknown calibration/skill requirements.
         for familyIndex, family in enumerate(FAMILIES):
             description = EXPERIMENTAL_WARNING + FAMILY_DESCRIPTIONS[familyIndex]
             for sizeIndex, size in enumerate(('Small', 'Medium', 'Large')):
@@ -1000,6 +999,7 @@ def update_db():
                 item.group = group
                 item.marketGroup = marketGroup
                 item.metaGroup = factionMetaGroup
+                item.metaLevel = 8
                 item.published = True
                 item.iconID = group.iconID
                 for suffix in eos.config.translation_mapping.values():
@@ -1007,9 +1007,12 @@ def update_db():
                     setattr(item, f'_description{suffix}', description)
                 eos.db.gamedata_session.add(item)
                 eos.db.gamedata_session.flush()
-                _hardcodeAttribs(item.ID, {'rigSize': sizeIndex + 1, 'maxGroupFitted': 1})
+                _hardcodeAttribs(item.ID, {
+                    'rigSize': sizeIndex + 1, 'maxGroupFitted': 1,
+                    'drawback': -10, 'volume': 5, 'hp': 40, 'techLevel': 1})
                 _hardcodeEffects(item.ID, {
                     2663: 'rigSlot',
+                    2713: 'drawbackCPUOutput',
                     EFFECT_ID: 'pyfaCustomExperimentalSynchronizer'})
         eos.db.gamedata_session.flush()
 
@@ -1048,7 +1051,8 @@ def update_db():
             _hardcodeAttribs(item.ID, {
                 'hiSlots': high, 'medSlots': mid, 'lowSlots': low,
                 'turretSlotsLeft': hull['turrets'],
-                'launcherSlotsLeft': hull['launchers']})
+                'launcherSlotsLeft': hull['launchers'],
+                **hull['attributes']})
             # No inherited T1 effects: the custom effect owns every navy bonus.
             _hardcodeEffects(item.ID, {EFFECT_ID: 'pyfaCustomExperimentalNavyBattlecruiser'})
         eos.db.gamedata_session.flush()
