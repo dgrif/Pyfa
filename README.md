@@ -1,5 +1,18 @@
 # pyfa
 
+## Preferred way to run this fork
+
+Install [uv](https://docs.astral.sh/uv/getting-started/installation/), then from the terminal run the following commands from this repository's root directory. Use Python 3.14, matching `.python-version`; the project's declared minimum is Python 3.12.
+
+```sh
+uv python install 3.14
+uv venv --python 3.14
+uv sync --locked
+uv run pyfa.py
+```
+
+`uv venv` creates a local `.venv`, and `uv sync --locked` installs the project's dependencies from `pyproject.toml` and `uv.lock` into it. No manual environment activation is needed. On Linux, the default wxPython dependency builds from source and requires the platform's compiler, Python development headers, and GTK development packages.
+
 [![Build Status](https://github.com/pyfa-org/Pyfa/actions/workflows/build.yml/badge.svg?branch=master)](https://github.com/pyfa-org/Pyfa/actions/workflows/build.yml)
 
 ![pyfa](https://user-images.githubusercontent.com/275209/66119992-864be080-e5e2-11e9-994a-3a4368c9fad7.png)
